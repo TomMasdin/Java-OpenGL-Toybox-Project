@@ -1,0 +1,244 @@
+package engineTester;
+
+import models.RawModel;
+import models.TexturedModel;
+import normalMappingObjConverter.NormalMappedObjLoader;
+import objConverter.ModelData;
+import objConverter.OBJFileLoader;
+import particles.Particle;
+import particles.ParticleMaster;
+import particles.ParticleSystem;
+import particles.ParticleTexture;
+import postProcessing.Fbo;
+import postProcessing.PostProcessing;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+
+import org.lwjgl.input.Keyboard;
+import org.lwjgl.opengl.Display;
+import org.lwjgl.opengl.GL30;
+import org.lwjgl.opengl.GL11;
+import org.lwjgl.util.vector.Vector2f;
+import org.lwjgl.util.vector.Vector3f;
+import org.lwjgl.util.vector.Vector4f;
+
+import renderEngine.DisplayManager;
+import renderEngine.Loader;
+import renderEngine.MasterRenderer;
+import renderEngine.OBJLoader;
+import terrains.Terrain;
+import textures.ModelTexture;
+import textures.TerrainTexture;
+import textures.TerrainTexturePack;
+import toolbox.MousePicker;
+import water.WaterFrameBuffers;
+import water.WaterRenderer;
+import water.WaterShader;
+import water.WaterTile;
+import entities.Camera;
+import entities.Entity;
+import entities.Light;
+import entities.Player;
+import fontMeshCreator.FontType;
+import fontMeshCreator.GUIText;
+import fontRendering.TextMaster;
+import guis.GuiRenderer;
+import guis.GuiTexture;
+
+
+/*
+ * TO DO
+ *  - Look into why every object requires a -1 offset to smoothly be on the ground
+ *  - Investigate the effects of an offset on the player(Jumping mechanic - reset player y pos)
+ */
+public class MainGameLoop {
+
+	public static void main(String[] args) {
+
+		DisplayManager.createDisplay();//this calls a method in the DisplayManager class to create the display
+		Random random = new Random(5666778);
+		Loader loader = new Loader();//create the object
+		RawModel playerModel = OBJLoader.loadObjModel("person", loader);
+		TexturedModel playerTexMod = new TexturedModel(playerModel, 
+				new ModelTexture(loader.loadTexture("playerTexture")));
+		
+		Player player = new Player(playerTexMod, new Vector3f(200, 5, 100), 0, 0, 0, 0.6f);
+		Camera camera = new Camera(player);
+		MasterRenderer renderer = new MasterRenderer(loader, camera);
+		GuiRenderer guiRenderer = new GuiRenderer(loader);
+		TextMaster.init(loader);
+		ParticleMaster.init(loader, renderer.getProjectiojnMatrix());
+
+		//******************** Terrains ********************\\
+		TerrainTexture backgroundTexture = new TerrainTexture(loader.loadTexture("grassy"));
+		TerrainTexture rTexture = new TerrainTexture(loader.loadTexture("dirt"));
+		TerrainTexture gTexture = new TerrainTexture(loader.loadTexture("pinkFlowers"));
+		TerrainTexture bTexture = new TerrainTexture(loader.loadTexture("path"));
+		TerrainTexturePack texturePack = new TerrainTexturePack(backgroundTexture, rTexture, gTexture, bTexture);
+		
+		TerrainTexture blendMap = new TerrainTexture(loader.loadTexture("blendMap"));
+		
+		
+		List<Terrain> terrains = new ArrayList<Terrain>();
+		Terrain terrain = new Terrain(0, 0, loader, texturePack, blendMap, "heightmap");
+		terrains.add(terrain);
+		
+		//******************** Lights ********************\\
+		
+		List<Light> lights = new ArrayList<Light>();
+		Light sun = new Light(new Vector3f(-10000,15000,-10000), new Vector3f(1f,1f,1f));
+		lights.add(sun);
+		
+		//******************** Entities ********************\\
+
+		List<Entity> entities = new ArrayList<Entity>();
+		List<Entity> normalMapEntities = new ArrayList<Entity>();
+		
+		RawModel treeModel = OBJLoader.loadObjModel("bobbleTree", loader);
+		ModelTexture treeTexture = new ModelTexture(loader.loadTexture("bobbleTree"));
+		TexturedModel treeTexModel = new TexturedModel(treeModel, treeTexture);
+		treeTexModel.getTexture().setHasTransparency(true);
+		
+		TexturedModel lantern = new TexturedModel(OBJLoader.loadObjModel("lantern", loader), new ModelTexture(loader.loadTexture("lantern")));
+		lantern.getTexture().setShineDamper(10.f);
+		lantern.getTexture().setReflectivity(0.5f);
+		//lantern.getTexture().setExtraInfoMap(loader.loadTexture("lanternS"));
+		entities.add(new Entity(lantern,new Vector3f(200, terrain.getHeightOfTerrain(200, 100), 100), 0, 0, 0, 1f));
+		
+		TexturedModel crate = new TexturedModel(NormalMappedObjLoader.loadOBJ("crate", loader), new ModelTexture(loader.loadTexture("crate")));
+		crate.getTexture().setShineDamper(10f);
+		crate.getTexture().setReflectivity(0.5f);
+		crate.getTexture().setNormalMap(loader.loadTexture("crateNormal"));
+		crate.getTexture().setExtraInfoMap(loader.loadTexture("crateS"));
+		normalMapEntities.add(new Entity(crate, new Vector3f(100, 20, 200), 0, 90, 0, 0.1f));
+		
+		
+		TexturedModel barrelModel = new TexturedModel(NormalMappedObjLoader.loadOBJ("barrel", loader),
+				new ModelTexture(loader.loadTexture("barrel")));
+		barrelModel.getTexture().setShineDamper(5f);
+		barrelModel.getTexture().setReflectivity(0.7f);
+		barrelModel.getTexture().setNormalMap(loader.loadTexture("barrelNormal"));
+		barrelModel.getTexture().setExtraInfoMap(loader.loadTexture("barrelS"));
+		normalMapEntities.add(new Entity(barrelModel, new Vector3f(100, terrain.getHeightOfTerrain(100, 100) + 20, 100), 0, 180, 0, 2.5f));
+		
+		TexturedModel boulderModel = new TexturedModel(NormalMappedObjLoader.loadOBJ("boulder", loader), new ModelTexture(loader.loadTexture("boulder")));
+		boulderModel.getTexture().setShineDamper(10f);
+		boulderModel.getTexture().setReflectivity(0.1f);
+		boulderModel.getTexture().setNormalMap(loader.loadTexture("boulderNormal"));
+		
+		for(int i = 0; i < 50; i++)
+		{
+			float x = 100 + random.nextFloat() * 300;
+			float z = 100 + random.nextFloat() * 300;
+			float y = terrain.getHeightOfTerrain(x, z) - 1;
+			entities.add(new Entity(treeTexModel, new Vector3f(x,y,z), 0,random.nextFloat() * 360,0, 2.f + random.nextFloat()));
+		}
+		for(int i = 0; i < 30; i++)
+		{
+			float x = 100 + random.nextFloat() * 200;
+			float z = 100 + random.nextFloat() * 200;
+			
+			float y = terrain.getHeightOfTerrain(x, z);
+			normalMapEntities.add(new Entity(boulderModel, new Vector3f(x,y,z), random.nextFloat() * 360, 0, 0, 0.5f + random.nextFloat()));
+		}
+		
+		//******************** Water ********************\\
+		
+		
+		WaterShader waterShader = new WaterShader();
+		WaterFrameBuffers fbos = new WaterFrameBuffers();
+		WaterRenderer waterRenderer = new WaterRenderer(loader, waterShader, renderer.getProjectiojnMatrix(), fbos);
+		List<WaterTile> waters = new ArrayList<WaterTile>();
+		WaterTile water = new WaterTile(110, 105, -8);
+		waters.add(water);
+		
+		//******************** Particles ********************\\
+		ParticleTexture particleTexture = new ParticleTexture(loader.loadTexture("particle/particleAtlas"), 4, false);
+		ParticleSystem system = new ParticleSystem(particleTexture, 50, 25, 0.3f, 4, 1f);
+		system.randomizeRotation();
+		system.setDirection(new Vector3f(0,1,0), 0.1f);
+		system.setLifeError(0.5f);
+		system.setSpeedError(0.2f);
+		system.setScaleError(1f);
+		
+		//******************** GUI ********************\\
+		MousePicker picker = new MousePicker(camera, renderer.getProjectiojnMatrix(), terrain);
+		FontType font = new FontType(loader.loadFontTexture("font/candara"), new File("res/font/candara.fnt"));
+		//Uses regular texture coords e.g. 0.5, 0.5 = middle of screen(top left corner of text box)
+		List<GuiTexture> guiTextures = new ArrayList<GuiTexture>();
+		GUIText text = new GUIText ("Tom's Toybox", 3, font, new Vector2f(0.1f, 0.1f), 0.5f, true);
+		GuiTexture shadowMap = new GuiTexture(renderer.getShadowMapTexture(), new Vector2f(0.5f, 0.5f), new Vector2f(0.5f, 0.5f));
+		//guiTextures.add(shadowMap);
+		
+		Fbo multisampleFbo = new Fbo(Display.getWidth(), Display.getHeight());
+		Fbo outputFbo = new Fbo(Display.getWidth(), Display.getHeight(), Fbo.DEPTH_TEXTURE);
+		Fbo outputFbo2 = new Fbo(Display.getWidth(), Display.getHeight(), Fbo.DEPTH_TEXTURE);
+		PostProcessing.init(loader);
+		
+		//******************** Game Loop ********************\\
+		
+		while(!Display.isCloseRequested()){
+			player.move(terrain);
+			camera.move();
+			picker.update();
+			system.generateParticles(new Vector3f(110,10,105));
+			ParticleMaster.update(camera);
+			
+			//System.out.println(renderer.getViewPlanes());
+			renderer.renderShadowMap(entities, normalMapEntities, sun);
+			GL11.glEnable(GL30.GL_CLIP_DISTANCE0);
+			
+			//Render reflection & inverse pitch(resetting after calculation)
+			fbos.bindReflectionFrameBuffer();
+			float distance = 2 * (camera.getPosition().y - water.getHeight());
+			camera.getPosition().y -= distance;
+			camera.invertPitch();
+			renderer.processEntity(player);
+			ParticleMaster.renderParticles(camera);
+			renderer.renderScene(entities, normalMapEntities, terrains, lights, camera, new Vector4f(0, 1, 0, -water.getHeight() + 1f));
+			camera.getPosition().y += distance;
+			camera.invertPitch();
+			
+			//Render refraction
+			fbos.bindRefractionFrameBuffer();
+			renderer.processEntity(player);
+			renderer.renderScene(entities, normalMapEntities, terrains, lights, camera, new Vector4f(0, -1, 0, water.getHeight()));
+			fbos.unbindCurrentFrameBuffer();
+			
+			//Render to screen
+			GL11.glDisable(GL30.GL_CLIP_DISTANCE0);
+			multisampleFbo.bindFrameBuffer();
+			renderer.processEntity(player);
+			renderer.renderScene(entities, normalMapEntities,  terrains, lights, camera, new Vector4f(0, 0, 0, 0));
+			waterRenderer.render(waters, camera, lights.get(0), renderer.getViewPlanes());
+			ParticleMaster.renderParticles(camera);
+			multisampleFbo.unbindFrameBuffer();
+			multisampleFbo.resolveToFbo(GL30.GL_COLOR_ATTACHMENT0, outputFbo);
+			multisampleFbo.resolveToFbo(GL30.GL_COLOR_ATTACHMENT1, outputFbo2);
+			PostProcessing.doPostProcessing(outputFbo.getColourTexture(), camera.getPosition().y, outputFbo2.getColourTexture());
+			//Render GUI
+			guiRenderer.render(guiTextures);
+			TextMaster.render();
+			
+			
+			DisplayManager.updateDisplay();
+		}
+		
+		PostProcessing.cleanUp();
+		outputFbo.cleanUp();
+		outputFbo2.cleanUp();
+		multisampleFbo.cleanUp();
+		ParticleMaster.cleanUp();
+		TextMaster.cleanUp();
+		fbos.cleanUp();
+		//guiRenderer.cleanUp();
+		renderer.cleanUp();
+		loader.cleanUp();
+		DisplayManager.closeDisplay();
+
+	}
+
+}

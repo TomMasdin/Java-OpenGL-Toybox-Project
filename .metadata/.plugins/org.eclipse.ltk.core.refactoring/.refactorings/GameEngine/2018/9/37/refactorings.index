@@ -1,0 +1,7 @@
+1536603274439	Rename local variable 'fbo'
+1536683427223	Rename method 'setSpecularMap'
+1536683442921	Rename method 'setExtraInfo'
+1536686499231	Rename method 'getSpecularMap'
+1536686512494	Rename method 'hasSpecularMap'
+1536686526908	Rename method 'loadUseSpecularMap'
+1536875936910	Rename field 'multisample'

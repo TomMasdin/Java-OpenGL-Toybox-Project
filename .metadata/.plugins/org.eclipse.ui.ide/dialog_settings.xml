@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<section name="Workbench">
+	<list key="org.eclipse.ui.internal.wizards.datatransfer.SmartImportRootWizardPage.knownSources">
+		<item value="F:\Learning\University Work"/>
+		<item value="G:\Learning\University Work\openGLProject\GameEngine"/>
+		<item value="G:\Learning\University Work\openGLGeometry"/>
+		<item value="G:\Learning\University Work\OpenGLJavaProjects\openGLGeometry"/>
+		<item value="G:\Learning\University Work\OpenGLJavaProjects"/>
+	</list>
+	<section name="ExternalProjectImportWizard">
+		<item value="false" key="WizardProjectsImportPage.STORE_NESTED_PROJECTS"/>
+		<item value="false" key="WizardProjectsImportPage.STORE_COPY_PROJECT_ID"/>
+		<item value="false" key="WizardProjectsImportPage.STORE_ARCHIVE_SELECTED"/>
+		<list key="WizardProjectsImportPage.STORE_DIRECTORIES">
+			<item value="F:\Learning\University Work"/>
+		</list>
+		<list key="WizardProjectsImportPage.STORE_ARCHIVES">
+			<item value=""/>
+			<item value="G:\Learning\University Work\openGLProject\GameEngine"/>
+		</list>
+	</section>
+</section>

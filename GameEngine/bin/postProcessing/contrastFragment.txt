@@ -1,0 +1,18 @@
+#version 140
+
+in vec2 textureCoords;
+
+out vec4 out_Colour;
+
+uniform sampler2D colourTexture;
+
+const float contrast = 0.3;
+
+void main(void){
+
+	out_Colour = texture(colourTexture, textureCoords);
+	out_Colour.r = (out_Colour.r - 0.5) * (1.0 + contrast) + 0.5;
+	out_Colour.g = (out_Colour.g - 0.5) * (1.0 + contrast) + 0.5;
+	out_Colour.b = (out_Colour.b - 0.5) * (1.0 + contrast) + 0.5;
+
+}

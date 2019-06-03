@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Rename method &apos;water.WaterShader.waterMotion(...)&apos; to &apos;loadMoveFactor&apos;&#x0D;&#x0A;- Original project: &apos;GameEngine&apos;&#x0D;&#x0A;- Original element: &apos;water.WaterShader.waterMotion(...)&apos;&#x0D;&#x0A;- Renamed element: &apos;water.WaterShader.loadMoveFactor(...)&apos;&#x0D;&#x0A;- Update references to refactored element" delegate="false" deprecate="false" description="Rename method &apos;waterMotion&apos;" flags="589830" id="org.eclipse.jdt.ui.rename.method" input="/src&lt;water{WaterShader.java[WaterShader~waterMotion~F" name="loadMoveFactor" references="true" stamp="1534801218481" version="1.0"/>
+</session>

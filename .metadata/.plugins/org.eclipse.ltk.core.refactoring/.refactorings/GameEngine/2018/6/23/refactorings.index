@@ -1,0 +1,9 @@
+1528210154702	Rename local variable 'model'
+1528210218799	Rename local variable 'vertices'
+1528210235337	Rename local variable 'm_triangleVertices'
+1528294583452	Rename method 'renderRaw'
+1528376979940	Move compilation unit
+1528376996263	Rename type 'modelLoader'
+1528377134053	Rename type 'modelTexture'
+1528467145440	Rename local variable 'model'
+1528468801380	Rename compilation unit 'camera.java'
